@@ -63,6 +63,454 @@ function omitDefault<T extends string | number | Long>(input: T): T | undefined 
   throw new Error(`Got unsupported type '${typeof input}'`);
 }
 
+function createDefaultTypesTerra(prefix: string): Record<string, AminoConverter> {
+  return {
+    // bank
+
+    "/cosmos.bank.v1beta1.MsgSend": {
+      aminoType: "bank/MsgSend",
+      toAmino: ({ fromAddress, toAddress, amount }: MsgSend): AminoMsgSend["value"] => ({
+        from_address: fromAddress,
+        to_address: toAddress,
+        amount: [...amount],
+      }),
+      fromAmino: ({ from_address, to_address, amount }: AminoMsgSend["value"]): MsgSend => ({
+        fromAddress: from_address,
+        toAddress: to_address,
+        amount: [...amount],
+      }),
+    },
+    "/cosmos.bank.v1beta1.MsgMultiSend": {
+      aminoType: "bank/MsgMultiSend",
+      toAmino: ({ inputs, outputs }: MsgMultiSend): AminoMsgMultiSend["value"] => ({
+        inputs: inputs.map((input) => ({
+          address: input.address,
+          coins: [...input.coins],
+        })),
+        outputs: outputs.map((output) => ({
+          address: output.address,
+          coins: [...output.coins],
+        })),
+      }),
+      fromAmino: ({ inputs, outputs }: AminoMsgMultiSend["value"]): MsgMultiSend => ({
+        inputs: inputs.map((input) => ({
+          address: input.address,
+          coins: [...input.coins],
+        })),
+        outputs: outputs.map((output) => ({
+          address: output.address,
+          coins: [...output.coins],
+        })),
+      }),
+    },
+
+    // distribution
+
+    "/cosmos.distribution.v1beta1.MsgFundCommunityPool": {
+      aminoType: "distribution/MsgFundCommunityPool",
+      toAmino: ({ amount, depositor }: MsgFundCommunityPool): AminoMsgFundCommunityPool["value"] => ({
+        amount: [...amount],
+        depositor: depositor,
+      }),
+      fromAmino: ({ amount, depositor }: AminoMsgFundCommunityPool["value"]): MsgFundCommunityPool => ({
+        amount: [...amount],
+        depositor: depositor,
+      }),
+    },
+    "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress": {
+      aminoType: "distribution/MsgModifyWithdrawAddress",
+      toAmino: ({
+        delegatorAddress,
+        withdrawAddress,
+      }: MsgSetWithdrawAddress): AminoMsgSetWithdrawAddress["value"] => ({
+        delegator_address: delegatorAddress,
+        withdraw_address: withdrawAddress,
+      }),
+      fromAmino: ({
+        delegator_address,
+        withdraw_address,
+      }: AminoMsgSetWithdrawAddress["value"]): MsgSetWithdrawAddress => ({
+        delegatorAddress: delegator_address,
+        withdrawAddress: withdraw_address,
+      }),
+    },
+    "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward": {
+      aminoType: "distribution/MsgWithdrawDelegationReward",
+      toAmino: ({
+        delegatorAddress,
+        validatorAddress,
+      }: MsgWithdrawDelegatorReward): AminoMsgWithdrawDelegatorReward["value"] => ({
+        delegator_address: delegatorAddress,
+        validator_address: validatorAddress,
+      }),
+      fromAmino: ({
+        delegator_address,
+        validator_address,
+      }: AminoMsgWithdrawDelegatorReward["value"]): MsgWithdrawDelegatorReward => ({
+        delegatorAddress: delegator_address,
+        validatorAddress: validator_address,
+      }),
+    },
+    "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission": {
+      aminoType: "distribution/MsgWithdrawValidatorCommission",
+      toAmino: ({
+        validatorAddress,
+      }: MsgWithdrawValidatorCommission): AminoMsgWithdrawValidatorCommission["value"] => ({
+        validator_address: validatorAddress,
+      }),
+      fromAmino: ({
+        validator_address,
+      }: AminoMsgWithdrawValidatorCommission["value"]): MsgWithdrawValidatorCommission => ({
+        validatorAddress: validator_address,
+      }),
+    },
+
+    // gov
+
+    "/cosmos.gov.v1beta1.MsgDeposit": {
+      aminoType: "gov/MsgDeposit",
+      toAmino: ({ amount, depositor, proposalId }: MsgDeposit): AminoMsgDeposit["value"] => {
+        return {
+          amount,
+          depositor,
+          proposal_id: proposalId.toString(),
+        };
+      },
+      fromAmino: ({ amount, depositor, proposal_id }: AminoMsgDeposit["value"]): MsgDeposit => {
+        return {
+          amount: Array.from(amount),
+          depositor,
+          proposalId: Long.fromString(proposal_id),
+        };
+      },
+    },
+    "/cosmos.gov.v1beta1.MsgVote": {
+      aminoType: "gov/MsgVote",
+      toAmino: ({ option, proposalId, voter }: MsgVote): AminoMsgVote["value"] => {
+        return {
+          option: option,
+          proposal_id: proposalId.toString(),
+          voter: voter,
+        };
+      },
+      fromAmino: ({ option, proposal_id, voter }: AminoMsgVote["value"]): MsgVote => {
+        return {
+          option: voteOptionFromJSON(option),
+          proposalId: Long.fromString(proposal_id),
+          voter: voter,
+        };
+      },
+    },
+    "/cosmos.gov.v1beta1.MsgSubmitProposal": {
+      aminoType: "gov/MsgSubmitProposal",
+      toAmino: ({
+        initialDeposit,
+        proposer,
+        content,
+      }: MsgSubmitProposal): AminoMsgSubmitProposal["value"] => {
+        assertDefinedAndNotNull(content);
+        let proposal: any;
+        switch (content.typeUrl) {
+          case "/cosmos.gov.v1beta1.TextProposal": {
+            const textProposal = TextProposal.decode(content.value);
+            proposal = {
+              type: "gov/TextProposal",
+              value: {
+                description: textProposal.description,
+                title: textProposal.title,
+              },
+            };
+            break;
+          }
+          default:
+            throw new Error(`Unsupported proposal type: '${content.typeUrl}'`);
+        }
+        return {
+          initial_deposit: initialDeposit,
+          proposer: proposer,
+          content: proposal,
+        };
+      },
+      fromAmino: ({
+        initial_deposit,
+        proposer,
+        content,
+      }: AminoMsgSubmitProposal["value"]): MsgSubmitProposal => {
+        let any_content: Any;
+        switch (content.type) {
+          case "gov/TextProposal": {
+            const { value } = content;
+            assert(isNonNullObject(value));
+            const { title, description } = value as any;
+            assert(typeof title === "string");
+            assert(typeof description === "string");
+            any_content = Any.fromPartial({
+              typeUrl: "/cosmos.gov.v1beta1.TextProposal",
+              value: TextProposal.encode(
+                TextProposal.fromPartial({
+                  title: title,
+                  description: description,
+                }),
+              ).finish(),
+            });
+            break;
+          }
+          default:
+            throw new Error(`Unsupported proposal type: '${content.type}'`);
+        }
+        return {
+          initialDeposit: Array.from(initial_deposit),
+          proposer: proposer,
+          content: any_content,
+        };
+      },
+    },
+
+    // staking
+
+    "/cosmos.staking.v1beta1.MsgBeginRedelegate": {
+      aminoType: "staking/MsgBeginRedelegate",
+      toAmino: ({
+        delegatorAddress,
+        validatorSrcAddress,
+        validatorDstAddress,
+        amount,
+      }: MsgBeginRedelegate): AminoMsgBeginRedelegate["value"] => {
+        assertDefinedAndNotNull(amount, "missing amount");
+        return {
+          delegator_address: delegatorAddress,
+          validator_src_address: validatorSrcAddress,
+          validator_dst_address: validatorDstAddress,
+          amount: amount,
+        };
+      },
+      fromAmino: ({
+        delegator_address,
+        validator_src_address,
+        validator_dst_address,
+        amount,
+      }: AminoMsgBeginRedelegate["value"]): MsgBeginRedelegate => ({
+        delegatorAddress: delegator_address,
+        validatorSrcAddress: validator_src_address,
+        validatorDstAddress: validator_dst_address,
+        amount: amount,
+      }),
+    },
+    "/cosmos.staking.v1beta1.MsgCreateValidator": {
+      aminoType: "staking/MsgCreateValidator",
+      toAmino: ({
+        description,
+        commission,
+        minSelfDelegation,
+        delegatorAddress,
+        validatorAddress,
+        pubkey,
+        value,
+      }: MsgCreateValidator): AminoMsgCreateValidator["value"] => {
+        assertDefinedAndNotNull(description, "missing description");
+        assertDefinedAndNotNull(commission, "missing commission");
+        assertDefinedAndNotNull(pubkey, "missing pubkey");
+        assertDefinedAndNotNull(value, "missing value");
+        return {
+          description: {
+            moniker: description.moniker,
+            identity: description.identity,
+            website: description.website,
+            security_contact: description.securityContact,
+            details: description.details,
+          },
+          commission: {
+            rate: commission.rate,
+            max_rate: commission.maxRate,
+            max_change_rate: commission.maxChangeRate,
+          },
+          min_self_delegation: minSelfDelegation,
+          delegator_address: delegatorAddress,
+          validator_address: validatorAddress,
+          pubkey: encodeBech32Pubkey(
+            {
+              type: "tendermint/PubKeySecp256k1",
+              value: toBase64(pubkey.value),
+            },
+            prefix,
+          ),
+          value: value,
+        };
+      },
+      fromAmino: ({
+        description,
+        commission,
+        min_self_delegation,
+        delegator_address,
+        validator_address,
+        pubkey,
+        value,
+      }: AminoMsgCreateValidator["value"]): MsgCreateValidator => {
+        const decodedPubkey = decodeBech32Pubkey(pubkey);
+        if (decodedPubkey.type !== "tendermint/PubKeySecp256k1") {
+          throw new Error("Only Secp256k1 public keys are supported");
+        }
+        return {
+          description: {
+            moniker: description.moniker,
+            identity: description.identity,
+            website: description.website,
+            securityContact: description.security_contact,
+            details: description.details,
+          },
+          commission: {
+            rate: commission.rate,
+            maxRate: commission.max_rate,
+            maxChangeRate: commission.max_change_rate,
+          },
+          minSelfDelegation: min_self_delegation,
+          delegatorAddress: delegator_address,
+          validatorAddress: validator_address,
+          pubkey: {
+            typeUrl: "/cosmos.crypto.secp256k1.PubKey",
+            value: fromBase64(decodedPubkey.value),
+          },
+          value: value,
+        };
+      },
+    },
+    "/cosmos.staking.v1beta1.MsgDelegate": {
+      aminoType: "staking/MsgDelegate",
+      toAmino: ({ delegatorAddress, validatorAddress, amount }: MsgDelegate): AminoMsgDelegate["value"] => {
+        assertDefinedAndNotNull(amount, "missing amount");
+        return {
+          delegator_address: delegatorAddress,
+          validator_address: validatorAddress,
+          amount: amount,
+        };
+      },
+      fromAmino: ({
+        delegator_address,
+        validator_address,
+        amount,
+      }: AminoMsgDelegate["value"]): MsgDelegate => ({
+        delegatorAddress: delegator_address,
+        validatorAddress: validator_address,
+        amount: amount,
+      }),
+    },
+    "/cosmos.staking.v1beta1.MsgEditValidator": {
+      aminoType: "staking/MsgEditValidator",
+      toAmino: ({
+        description,
+        commissionRate,
+        minSelfDelegation,
+        validatorAddress,
+      }: MsgEditValidator): AminoMsgEditValidator["value"] => {
+        assertDefinedAndNotNull(description, "missing description");
+        return {
+          description: {
+            moniker: description.moniker,
+            identity: description.identity,
+            website: description.website,
+            security_contact: description.securityContact,
+            details: description.details,
+          },
+          commission_rate: commissionRate,
+          min_self_delegation: minSelfDelegation,
+          validator_address: validatorAddress,
+        };
+      },
+      fromAmino: ({
+        description,
+        commission_rate,
+        min_self_delegation,
+        validator_address,
+      }: AminoMsgEditValidator["value"]): MsgEditValidator => ({
+        description: {
+          moniker: description.moniker,
+          identity: description.identity,
+          website: description.website,
+          securityContact: description.security_contact,
+          details: description.details,
+        },
+        commissionRate: commission_rate,
+        minSelfDelegation: min_self_delegation,
+        validatorAddress: validator_address,
+      }),
+    },
+    "/cosmos.staking.v1beta1.MsgUndelegate": {
+      aminoType: "staking/MsgUndelegate",
+      toAmino: ({
+        delegatorAddress,
+        validatorAddress,
+        amount,
+      }: MsgUndelegate): AminoMsgUndelegate["value"] => {
+        assertDefinedAndNotNull(amount, "missing amount");
+        return {
+          delegator_address: delegatorAddress,
+          validator_address: validatorAddress,
+          amount: amount,
+        };
+      },
+      fromAmino: ({
+        delegator_address,
+        validator_address,
+        amount,
+      }: AminoMsgUndelegate["value"]): MsgUndelegate => ({
+        delegatorAddress: delegator_address,
+        validatorAddress: validator_address,
+        amount: amount,
+      }),
+    },
+
+    // ibc
+
+    "/ibc.applications.transfer.v1.MsgTransfer": {
+      aminoType: "cosmos-sdk/MsgTransfer",
+      toAmino: ({
+        sourcePort,
+        sourceChannel,
+        token,
+        sender,
+        receiver,
+        timeoutHeight,
+        timeoutTimestamp,
+      }: MsgTransfer): AminoMsgTransfer["value"] => ({
+        source_port: sourcePort,
+        source_channel: sourceChannel,
+        token: token,
+        sender: sender,
+        receiver: receiver,
+        timeout_height: timeoutHeight
+          ? {
+              revision_height: omitDefault(timeoutHeight.revisionHeight)?.toString(),
+              revision_number: omitDefault(timeoutHeight.revisionNumber)?.toString(),
+            }
+          : {},
+        timeout_timestamp: omitDefault(timeoutTimestamp)?.toString(),
+      }),
+      fromAmino: ({
+        source_port,
+        source_channel,
+        token,
+        sender,
+        receiver,
+        timeout_height,
+        timeout_timestamp,
+      }: AminoMsgTransfer["value"]): MsgTransfer => ({
+        sourcePort: source_port,
+        sourceChannel: source_channel,
+        token: token,
+        sender: sender,
+        receiver: receiver,
+        timeoutHeight: timeout_height
+          ? {
+              revisionHeight: Long.fromString(timeout_height.revision_height || "0", true),
+              revisionNumber: Long.fromString(timeout_height.revision_number || "0", true),
+            }
+          : undefined,
+        timeoutTimestamp: Long.fromString(timeout_timestamp || "0", true),
+      }),
+    },
+  };
+}
+
 function createDefaultTypes(prefix: string): Record<string, AminoConverter> {
   return {
     // bank
@@ -528,13 +976,24 @@ export class AminoTypes {
 
   public constructor({ prefix, additions = {} }: AminoTypesOptions) {
     const additionalAminoTypes = Object.values(additions);
-    const filteredDefaultTypes = Object.entries(createDefaultTypes(prefix)).reduce(
-      (acc, [key, value]) =>
-        additionalAminoTypes.find(({ aminoType }) => value.aminoType === aminoType)
-          ? acc
-          : { ...acc, [key]: value },
-      {},
-    );
+    let filteredDefaultTypes:{}
+    if (prefix === 'terra') {
+        filteredDefaultTypes = Object.entries(createDefaultTypesTerra(prefix)).reduce(
+          (acc, [key, value]) =>
+            additionalAminoTypes.find(({ aminoType }) => value.aminoType === aminoType)
+              ? acc
+              : { ...acc, [key]: value },
+          {},
+        );
+    } else {
+        filteredDefaultTypes = Object.entries(createDefaultTypes(prefix)).reduce(
+          (acc, [key, value]) =>
+            additionalAminoTypes.find(({ aminoType }) => value.aminoType === aminoType)
+              ? acc
+              : { ...acc, [key]: value },
+          {},
+        );
+    }
     this.register = { ...filteredDefaultTypes, ...additions };
   }
 

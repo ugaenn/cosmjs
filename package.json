@@ -46,8 +46,10 @@
     "@cosmjs/encoding": "workspace:packages/encoding",
     "@cosmjs/proto-signing": "workspace:packages/proto-signing",
     "@cosmjs/stargate": "workspace:packages/stargate",
+    "@typescript-eslint/eslint-plugin": "^5.13.0",
+    "@typescript-eslint/parser": "^5.13.0",
     "eslint": "^7.5",
     "prettier": "^2.4.1",
-    "typescript": "~4.4"
+    "typescript": "^4.6.2"
   }
 }
