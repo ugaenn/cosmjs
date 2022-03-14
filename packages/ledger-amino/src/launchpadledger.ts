@@ -147,11 +147,11 @@ export class LaunchpadLedger {
 
   private async verifyAppVersion(): Promise<void> {
     const version = await this.getCosmosAppVersion();
-    if (!semver.gte(version, this.minLedgerAppVersion)) {
-      throw new Error(
-        `Outdated version: Please update ${this.ledgerAppName} Ledger App to the latest version.`,
-      );
-    }
+          // if (!semver.gte(version, this.minLedgerAppVersion)) {
+            // throw new Error(
+            // `Outdated version: Please update ${this.ledgerAppName} Ledger App to the latest version.`,
+            // );
+          // }
   }
 
   private async verifyCosmosAppIsOpen(): Promise<void> {
@@ -160,11 +160,11 @@ export class LaunchpadLedger {
     if (appName.toLowerCase() === `dashboard`) {
       throw new Error(`Please open the ${this.ledgerAppName} Ledger app on your Ledger device.`);
     }
-    if (appName.toLowerCase() !== this.ledgerAppName.toLowerCase()) {
-      throw new Error(
-        `Please close ${appName} and open the ${this.ledgerAppName} Ledger app on your Ledger device.`,
-      );
-    }
+          // if (appName.toLowerCase() !== this.ledgerAppName.toLowerCase()) {
+          // throw new Error(
+          // `Please close ${appName} and open the ${this.ledgerAppName} Ledger app on your Ledger device.`,
+          // );
+          //}
   }
 
   private async verifyDeviceIsReady(): Promise<void> {
