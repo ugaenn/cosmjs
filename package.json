@@ -40,17 +40,18 @@
     "publish-latest": "yarn workspaces foreach --no-private exec yarn npm publish"
   },
   "devDependencies": {
-    "@cosmjs/amino": "workspaces:packages/amino",
-    "@cosmjs/cosmwasm-stargate": "workspaces:packages/cosmwasm-stargate",
-    "@cosmjs/crypto": "workspaces:packages/crypto",
-    "@cosmjs/encoding": "workspaces:packages/encoding",
-    "@cosmjs/proto-signing": "workspaces:packages/proto-signing",
-    "@cosmjs/stargate": "workspaces:packages/stargate",
+    "@cosmjs/amino": "workspace:packages/amino",
+    "@cosmjs/cosmwasm-stargate": "workspace:packages/cosmwasm-stargate",
+    "@cosmjs/crypto": "workspace:packages/crypto",
+    "@cosmjs/encoding": "workspace:packages/encoding",
+    "@cosmjs/proto-signing": "workspace:packages/proto-signing",
+    "@cosmjs/stargate": "workspace:packages/stargate",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.13.0",
     "eslint": "^7.5",
     "prettier": "^2.4.1",
     "typescript": "^4.6.2"
   },
-  "version": "1.22.1"
+  "version": "1.22.1",
+  "packageManager": "yarn@3.1.0"
 }
