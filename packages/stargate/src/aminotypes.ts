@@ -977,7 +977,7 @@ export class AminoTypes {
   public constructor({ prefix, additions = {} }: AminoTypesOptions) {
     const additionalAminoTypes = Object.values(additions);
     let filteredDefaultTypes:{}
-    if (prefix === 'terra') {
+    if (prefix === 'terraC') {
         filteredDefaultTypes = Object.entries(createDefaultTypesTerra(prefix)).reduce(
           (acc, [key, value]) =>
             additionalAminoTypes.find(({ aminoType }) => value.aminoType === aminoType)
